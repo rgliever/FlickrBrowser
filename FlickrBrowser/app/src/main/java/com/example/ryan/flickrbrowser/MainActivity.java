@@ -1,14 +1,19 @@
 package com.example.ryan.flickrbrowser;
 
+import android.app.ProgressDialog;
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.*;
 
 import org.apache.http.HttpEntity;
@@ -25,6 +30,8 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class MainActivity extends ActionBarActivity {
@@ -32,63 +39,96 @@ public class MainActivity extends ActionBarActivity {
     EditText searchQuery;
     Button searchButton;
     TextView jsonResult;
-    ImageView imageView;
-    String searchResult = null;
-    Bitmap bitmap;
+    ListView gallery;
+    public ProgressDialog progressDialog;
+
+    private class ListElement {
+        ListElement(){};
+        public Bitmap bm;
+    }
+    private ArrayList<ListElement> aList;
+
+    private class ListAdapter extends ArrayAdapter<ListElement> {
+
+        int resource;
+        Context context;
+
+        public ListAdapter(Context _context, int _resource, List<ListElement> items) {
+            super(_context, _resource, items);
+            resource = _resource;
+            context = _context;
+            this.context = _context;
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            LinearLayout newView;
+
+            ListElement w = getItem(position);
+
+            // Inflate a new view if necessary.
+            if (convertView == null) {
+                newView = new LinearLayout(getContext());
+                String inflater = Context.LAYOUT_INFLATER_SERVICE;
+                LayoutInflater vi = (LayoutInflater) getContext().getSystemService(inflater);
+                vi.inflate(resource,  newView, true);
+            } else {
+                newView = (LinearLayout) convertView;
+            }
+
+            // Fills in the view.
+            ImageView imageView = (ImageView) newView.findViewById(R.id.image);
+            imageView.setImageBitmap(w.bm);
+
+            // Set a listener for the whole list item.
+            //newView.setTag(w.textLabel);
+            newView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    /*String s = v.getTag().toString();
+                    int duration = Toast.LENGTH_SHORT;
+                    Toast toast = Toast.makeText(context, s, duration);
+                    toast.show();*/
+
+                }
+            });
+
+            return newView;
+        }
+
+    }
+
+    private ListAdapter listAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         searchQuery = (EditText)findViewById(R.id.editText);
         searchButton = (Button)findViewById(R.id.button);
         jsonResult = (TextView)findViewById(R.id.jsonresult);
-        imageView = (ImageView)findViewById(R.id.image);
+        gallery = (ListView)findViewById(R.id.listView);
+        aList = new ArrayList<ListElement>();
+        listAdapter = new ListAdapter(this, R.layout.imagelist, aList);
+        listAdapter.notifyDataSetChanged();
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setTitle("LOADING");
+        progressDialog.setMessage("Getting your photos...");
+        progressDialog.setCancelable(false);
         searchButton.setOnClickListener(searchButtonListener);
     }
 
     private Button.OnClickListener searchButtonListener = new Button.OnClickListener() {
         @Override
         public void onClick(View v) {
+            progressDialog.show();
             final String searchString = searchQuery.getText().toString();
-            new QueryFlickr().execute(searchString);
+            PostPhotoList ppl = new PostPhotoList(searchString);
+            new QueryFlickr().execute(ppl);
+            InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
         }
     };
-
-    private String ParseJSON (String json) {
-        String jResult = null;
-        bitmap = null;
-
-        try {
-            JSONObject jsonObject = new JSONObject(json);
-            JSONObject json_photos = jsonObject.getJSONObject("photos");
-            JSONArray json_photo_array = json_photos.getJSONArray("photo");
-
-            JSONObject FlickrPhoto = json_photo_array.getJSONObject(0);
-
-            String ID = FlickrPhoto.getString("id");
-            String OWNER = FlickrPhoto.getString("owner");
-            String SECRET = FlickrPhoto.getString("secret");
-            String SERVER = FlickrPhoto.getString("server");
-            String FARM = FlickrPhoto.getString("farm");
-            String TITLE = FlickrPhoto.getString("title");
-
-            jResult = "\nid: " + ID + "\n"
-                    + "owner: " + OWNER + "\n"
-                    + "secret: " + SECRET + "\n"
-                    + "server: " + SERVER + "\n"
-                    + "farm: " + FARM + "\n"
-                    + "title: " + TITLE + "\n";
-
-            String loadPhotoParams[] = {ID, OWNER, SECRET, SERVER, FARM, TITLE};
-            new LoadPhoto().execute(loadPhotoParams);
-
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        return jResult;
-    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -112,93 +152,30 @@ public class MainActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    private class LoadPhoto extends AsyncTask<String, Void, Bitmap> {
-
-        protected Bitmap doInBackground(String... params) {
-            String id = params[0];
-            String owner = params[1];
-            String secret = params[2];
-            String server = params[3];
-            String farm = params[4];
-            String title = params[5];
-
-            Bitmap bm = null;
-            String FlickrPhotoPath =
-                    "http://farm" + farm + ".static.flickr.com/"
-                    + server + "/" + id + "_" + secret + "_m.jpg";
-
-            URL PhotoURL = null;
-            try {
-                PhotoURL = new URL(FlickrPhotoPath);
-                HttpURLConnection httpURLConnection = (HttpURLConnection) PhotoURL.openConnection();
-                httpURLConnection.setDoInput(true);
-                httpURLConnection.connect();
-                InputStream inputStream = httpURLConnection.getInputStream();
-                bm = BitmapFactory.decodeStream(inputStream);
-            } catch (MalformedURLException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
+    // class extends PhotoList and contains searchString to pass to QueryFlickr
+    class PostPhotoList extends PhotoList {
+        String searchString;
+        PostPhotoList (String ss) {
+            this.searchString = ss;
+        };
+        @Override
+        public void useResult(PhotoList pl) {
+            aList.clear();
+            for (int i = 0; i < pl.photoList.length; i++) {
+                ListElement listElement = new ListElement();
+                listElement.bm = pl.photoList[i].bitmap;
+                aList.add(listElement);
             }
-
-            return bm;
-        }
-
-        protected void onPostExecute(Bitmap bm) {
-            imageView.setImageBitmap(bm);
+            listAdapter = new ListAdapter(MainActivity.this, R.layout.imagelist, aList);
+            gallery.setAdapter(listAdapter);
+            listAdapter.notifyDataSetChanged();
+            hideLoading();
         }
     }
 
-    private class QueryFlickr extends AsyncTask<String, Void, String> {
-
-        private static final String URL_PREFIX = "https://api.flickr.com/services/rest/?";
-        private static final String URL_SEARCH = "method=flickr.photos.search";
-        private static final String URL_PERPAGE = "&per_page=1";
-        private static final String URL_NOJSON = "&nojsoncallback=1";
-        private static final String URL_FORMAT = "&format=json";
-        private static final String URL_TAGS = "&tags=";
-        private static final String URL_KEY = "&api_key=";
-        private static final String API_KEY = "1073716bf6315ed00fa4da7e7b7d589e";
-        private static final String API_SECRET = "7204de4d5f4702db";
-        private Exception exception;
-
-        protected String doInBackground(String... searchString) {
-            String result = null;
-            String queryString = URL_PREFIX + URL_SEARCH
-                    + URL_PERPAGE + URL_NOJSON
-                    + URL_FORMAT
-                    + URL_TAGS + searchString[0]
-                    + URL_KEY + API_KEY;
-
-            HttpClient httpClient = new DefaultHttpClient();
-            HttpGet httpGet = new HttpGet(queryString);
-            try {
-                HttpEntity httpEntity = httpClient.execute(httpGet).getEntity();
-                if (httpEntity != null) {
-                    InputStream inputStream = httpEntity.getContent();
-                    Reader in = new InputStreamReader(inputStream);
-                    BufferedReader bufferedReader = new BufferedReader(in);
-                    StringBuilder stringBuilder = new StringBuilder();
-
-                    String stringReadLine = null;
-
-                    while ((stringReadLine = bufferedReader.readLine()) != null){
-                        stringBuilder.append(stringReadLine + "\n");
-                    }
-
-                    result = stringBuilder.toString();
-                }
-            } catch (ClientProtocolException e) {
-                e.printStackTrace();
-            } catch (IOException e){
-                e.printStackTrace();
-            }
-            return result;
-        }
-
-        protected void onPostExecute(String result) {
-            String parsed = ParseJSON(result);
-            jsonResult.setText(parsed);
-        }
+    public void hideLoading() {
+        if (progressDialog != null && progressDialog.isShowing())
+            progressDialog.dismiss();
     }
+
 }

@@ -38,10 +38,37 @@
         android:layout_gravity="center_horizontal" />
     <TextView
         android:id="@+id/jsonresult"
-        android:layout_width="fill_parent"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content" />
-    <ImageView
-        android:id="@+id/image"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content" />
+
+    <ListView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/listView"
+        android:layout_gravity="center_horizontal" />
+
+    <!--
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/horizontalScrollView"
+        android:layout_gravity="center_horizontal" >
+
+        <LinearLayout
+            android:id="@+id/imageHolder"
+            android:orientation="horizontal"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent">
+        <ImageView
+            android:id="@+id/image_0"
+            android:layout_width="fill_parent"
+            android:layout_height="75dp" />
+        <ImageView
+            android:id="@+id/image_1"
+            android:layout_width="fill_parent"
+            android:layout_height="75dp" />
+        </LinearLayout>
+
+    </HorizontalScrollView>
+    -->
 </LinearLayout>
