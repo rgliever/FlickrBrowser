@@ -5,6 +5,7 @@ import java.util.ArrayList;
 /**
  * Created by Ryan on 5/3/2015.
  */
+// list of FlickrPhotos
 public class PhotoList {
 
     public FlickrPhoto[] photoList;

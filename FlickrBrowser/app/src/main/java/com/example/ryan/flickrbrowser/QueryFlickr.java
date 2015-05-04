@@ -28,6 +28,7 @@ import java.net.URL;
  */
 public class QueryFlickr extends AsyncTask<MainActivity.PostPhotoList, Void, PhotoList> {
 
+    //number of results to display
     private static final int NUM_RESULTS = 10;
 
     private static final String URL_PREFIX = "https://api.flickr.com/services/rest/?";
@@ -44,7 +45,6 @@ public class QueryFlickr extends AsyncTask<MainActivity.PostPhotoList, Void, Pho
     PhotoList pl;
 
     private String ParseJSON (String json, int j) {
-        Log.i("ParseJSON", Integer.toString(j));
         String jResult = null;
 
         try {

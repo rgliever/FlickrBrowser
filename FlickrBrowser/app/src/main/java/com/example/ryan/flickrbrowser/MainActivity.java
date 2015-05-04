@@ -1,5 +1,7 @@
 package com.example.ryan.flickrbrowser;
 
+// Ryan Gliever -- 5/3/2015
+
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -42,14 +44,18 @@ public class MainActivity extends ActionBarActivity {
     ListView gallery;
     public ProgressDialog progressDialog;
 
+    // list element for the ListView
     private class ListElement {
         ListElement(){};
         public Bitmap bm;
+        public String title;
     }
+
+    // array list of list elements for ListView
     private ArrayList<ListElement> aList;
 
+    // custom adapter
     private class ListAdapter extends ArrayAdapter<ListElement> {
-
         int resource;
         Context context;
 
@@ -76,12 +82,14 @@ public class MainActivity extends ActionBarActivity {
                 newView = (LinearLayout) convertView;
             }
 
-            // Fills in the view.
+            // Fills in the view
             ImageView imageView = (ImageView) newView.findViewById(R.id.image);
             imageView.setImageBitmap(w.bm);
+            imageView.setMinimumHeight(300);
+            TextView textView = (TextView) newView.findViewById(R.id.title);
+            textView.setText(w.title);
 
             // Set a listener for the whole list item.
-            //newView.setTag(w.textLabel);
             newView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -124,7 +132,9 @@ public class MainActivity extends ActionBarActivity {
             progressDialog.show();
             final String searchString = searchQuery.getText().toString();
             PostPhotoList ppl = new PostPhotoList(searchString);
+            // start AsyncTask
             new QueryFlickr().execute(ppl);
+            // close keyboard
             InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
         }
@@ -158,12 +168,15 @@ public class MainActivity extends ActionBarActivity {
         PostPhotoList (String ss) {
             this.searchString = ss;
         };
+        // useResult called from onPostExecute in QueryFlickr
         @Override
         public void useResult(PhotoList pl) {
             aList.clear();
+            // build up list
             for (int i = 0; i < pl.photoList.length; i++) {
                 ListElement listElement = new ListElement();
                 listElement.bm = pl.photoList[i].bitmap;
+                listElement.title = pl.photoList[i].title.toString();
                 aList.add(listElement);
             }
             listAdapter = new ListAdapter(MainActivity.this, R.layout.imagelist, aList);
@@ -173,6 +186,7 @@ public class MainActivity extends ActionBarActivity {
         }
     }
 
+    // hide the progress dialog
     public void hideLoading() {
         if (progressDialog != null && progressDialog.isShowing())
             progressDialog.dismiss();

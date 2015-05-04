@@ -6,6 +6,7 @@ import android.util.Log;
 /**
  * Created by Ryan on 5/3/2015.
  */
+// class which contains json response fields for photos and a bitmap of the photo
 public class FlickrPhoto {
 
     FlickrPhoto() {};
